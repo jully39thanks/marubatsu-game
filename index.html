@@ -60,7 +60,7 @@ details li{margin:3px 0}
 .overlay .box{max-width:380px;width:100%;text-align:center}
 .overlay .who{font-size:28px;font-weight:700;margin:8px 0}
 .overlay .who.p0{color:var(--p0)} .overlay .who.p1{color:var(--p1)}
-.overlay .last{font-size:14px;color:var(--muted);background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px;margin:14px 0}
+.overlay .last{white-space:pre-line;font-size:14px;color:var(--muted);background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px;margin:14px 0}
 .hidden{display:none!important}
 </style>
 </head>
@@ -83,7 +83,8 @@ details li{margin:3px 0}
         <li>駒は裏向きで置く。本物か偽物かは置いた本人しか知らない。</li>
         <li>手番では「置く」「めくる」「勝利宣言」のどれか1つを行う。</li>
         <li><b>めくる</b>：相手の伏せ駒を1枚めくる（1試合2回まで・手番を消費）。偽物なら除去、本物なら表向きのまま残る。</li>
-        <li><b>勝利宣言</b>：自分の駒が一列並んでいるときに宣言。その列が全部本物なら宣言者の勝ち（2点）、1枚でも偽物なら相手の勝ち（2点）。</li>
+        <li><b>勝利宣言</b>：自分の駒が一列並んでいるときに宣言できる（偽物入りの列でもよい）。相手は「認める」か「ダウト」を選ぶ。</li>
+        <li>認める → 宣言者の勝ち（2点）。ダウト → その列をめくり、全部本物なら宣言者の勝ち（3点）、偽物が混ざっていればダウトした側の勝ち（2点）。</li>
         <li>置けない（手駒切れ・空きマスなし）ときはパスできる。両者が続けてパスしたら全めくり判定。</li>
         <li><b>全めくり判定</b>：本物だけの一列を持つのが片方だけならその人の勝ち（1点）。両者または誰も持たなければ引き分け。</li>
         <li>先後を交代して2戦で1セット。合計点が同点ならもう1戦。</li>
@@ -125,7 +126,7 @@ function newGame(){
     hand:[{real:3,fake:2},{real:3,fake:2}],
     flips:[2,2], removed:[0,0],
     turn:S.first, first:S.first, passes:0,
-    mode:null, log:[], over:false, hidden:true, hl:[], result:null
+    mode:null, log:[], over:false, hidden:true, hl:[], result:null, pending:null
   };
   addLog(`第${S.game}戦開始。先手は${P[g.turn].name}。`);
   showHandoff(`第${S.game}戦　先手は${P[g.turn].name}（${P[g.turn].mark}）`, "ゲーム開始");
@@ -168,14 +169,27 @@ function flip(i){
 }
 
 function declare(L){
-  const p=g.turn, o=1-p;
-  L.c.forEach(i=>g.board[i].up=true);
-  const ok=L.c.every(i=>g.board[i].real);
+  const p=g.turn;
+  g.pending={L,by:p}; g.passes=0; g.hl=L.c;
   addLog(`${P[p].name}が${L.n}で勝利宣言！`);
-  if(ok){
-    finishGame(p,2,`${P[p].name}の勝利宣言成功（${L.n}はすべて本物）`,L.c);
+  g.turn=1-p; g.mode=null;
+  showHandoff(`${P[p].name}が${L.n}で勝利宣言！\n${P[g.turn].name}は「認める」か「ダウト」を選んでください。`,"勝利宣言");
+}
+
+function judge(accept){
+  const {L,by}=g.pending, o=1-by;
+  g.pending=null;
+  if(accept){
+    addLog(`${P[o].name}は宣言を認めた。`);
+    finishGame(by,2,`${P[o].name}が${P[by].name}の宣言（${L.n}）を認めた`,L.c);
+    return;
+  }
+  addLog(`${P[o].name}がダウト！`);
+  L.c.forEach(i=>g.board[i].up=true);
+  if(L.c.every(i=>g.board[i].real)){
+    finishGame(by,3,`ダウト失敗：${L.n}はすべて本物だった`,L.c);
   }else{
-    finishGame(o,2,`${P[p].name}の勝利宣言失敗（${L.n}に偽物が混ざっていた）`,L.c);
+    finishGame(o,2,`ダウト成功：${L.n}に偽物が混ざっていた（ブラフ）`,L.c);
   }
 }
 
@@ -285,6 +299,19 @@ function render(){
   // 行動パネル
   const A=$("actions");
   if(!viewing){ A.classList.add("hidden"); }
+  else if(g.pending){
+    A.classList.remove("hidden");
+    const {L,by}=g.pending;
+    A.innerHTML=`
+      <div style="font-weight:700;margin-bottom:8px">${P[by].name}が${L.n}（黄色の枠）で勝利宣言しています</div>
+      <div class="btns">
+        <button id="bAccept">認める（${P[by].name}に2点）</button>
+        <button id="bDoubt">ダウト！</button>
+      </div>
+      <div class="hint">ダウト：偽物が混ざっていればあなたの勝ち（2点）。全部本物なら${P[by].name}の勝ち（3点）。</div>`;
+    $("bAccept").onclick=()=>judge(true);
+    $("bDoubt").onclick=()=>judge(false);
+  }
   else{
     A.classList.remove("hidden");
     const h=g.hand[me], ft=flipTargets(me), dl=declLines(me), cp=canPlace(me);
