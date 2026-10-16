@@ -9,23 +9,30 @@
   --bg:#f3efe7;--panel:#fffdf8;--ink:#2a2622;--muted:#7d746b;--line:#d9d0c3;
   --p0:#c8463d;--p0d:#a8362f;--p0soft:#f7e0dc;
   --p1:#2f6db5;--p1d:#245793;--p1soft:#dbe7f6;
-  --hl:#e8b931;
+  --hl:#e8b931;--ok:#3a9b5c;
 }
 *{box-sizing:border-box}
 html,body{margin:0}
 body{background:var(--bg);color:var(--ink);font-family:"Hiragino Sans","Noto Sans JP","Yu Gothic",system-ui,sans-serif;line-height:1.5}
 .wrap{max-width:520px;margin:0 auto;padding:16px 16px 40px}
 h1{font-size:22px;margin:0;letter-spacing:.08em}
-.top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px}
+.top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px}
 .score{font-size:14px;color:var(--muted)}
 .score b{font-size:18px}
 .score .s0{color:var(--p0)} .score .s1{color:var(--p1)}
+.sub{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--muted);margin-bottom:10px;min-height:18px}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#bbb;margin-right:5px;vertical-align:1px}
+.dot.ok{background:var(--ok)} .dot.down{background:var(--p0)}
+.youare{font-weight:700}
+.youare.p0{color:var(--p0)} .youare.p1{color:var(--p1)}
 .players{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
 .pl{background:var(--panel);border:2px solid var(--line);border-radius:10px;padding:8px 10px;font-size:13px}
 .pl.active.p0{border-color:var(--p0)} .pl.active.p1{border-color:var(--p1)}
 .pl .nm{font-weight:700;font-size:15px}
 .pl.p0 .nm{color:var(--p0)} .pl.p1 .nm{color:var(--p1)}
-.pl .turnmark{font-size:11px;background:var(--ink);color:#fff;border-radius:6px;padding:0 6px;margin-left:6px;vertical-align:2px}
+.pl .badge{font-size:11px;border-radius:6px;padding:0 6px;margin-left:4px;vertical-align:2px;font-weight:700}
+.pl .badge.turn{background:var(--ink);color:#fff}
+.pl .badge.you{border:1px solid var(--line);color:var(--muted)}
 .board{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;width:100%;margin-bottom:12px}
 .cell{aspect-ratio:1/1;min-width:0;overflow:hidden;background:var(--panel);border:2px solid var(--line);border-radius:12px;position:relative;display:flex;align-items:center;justify-content:center;user-select:none}
 .cell.target{border-color:var(--ink);border-style:dashed;cursor:pointer}
@@ -46,6 +53,7 @@ button:disabled{opacity:.35;cursor:not-allowed}
 button.on{background:var(--ink);color:#fff}
 button.primary{background:var(--ink);color:#fff;width:100%;font-size:16px;padding:12px}
 .hint{font-size:13px;color:var(--muted);margin-top:8px;min-height:1.5em}
+.waitmsg{font-size:15px;text-align:center;color:var(--muted);padding:6px 0}
 .lines{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}
 .lines button{font-size:13px;padding:8px 6px}
 .log{font-size:13px;max-height:180px;overflow:auto}
@@ -53,14 +61,15 @@ button.primary{background:var(--ink);color:#fff;width:100%;font-size:16px;paddin
 .log div:first-child{font-weight:700}
 .result h2{margin:0 0 6px;font-size:18px}
 .result p{margin:4px 0 10px;font-size:14px}
+.row{display:flex;gap:6px}
+.row input{flex:1;min-width:0;font:inherit;font-size:15px;padding:10px;border:1.5px solid var(--line);border-radius:10px;background:#fff;color:var(--ink)}
+.row button{flex:none;padding:10px 14px}
+.label{font-size:13px;color:var(--muted);margin:14px 0 6px}
+.code{font-size:28px;font-weight:700;letter-spacing:.2em;text-align:center;margin:4px 0 10px}
 details{font-size:13px;color:var(--ink)}
 details summary{cursor:pointer;font-weight:700}
 details li{margin:3px 0}
-.overlay{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:24px;z-index:10}
-.overlay .box{max-width:380px;width:100%;text-align:center}
-.overlay .who{font-size:28px;font-weight:700;margin:8px 0}
-.overlay .who.p0{color:var(--p0)} .overlay .who.p1{color:var(--p1)}
-.overlay .last{white-space:pre-line;font-size:14px;color:var(--muted);background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px;margin:14px 0}
+.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 14px;border-radius:10px;font-size:14px;max-width:calc(100vw - 32px);z-index:20;box-shadow:0 4px 14px rgba(0,0,0,.2)}
 .hidden{display:none!important}
 </style>
 </head>
@@ -70,18 +79,35 @@ details li{margin:3px 0}
     <h1>伏せ〇×</h1>
     <div class="score" id="score"></div>
   </div>
-  <div class="players" id="players"></div>
-  <div class="board" id="board"></div>
-  <div class="panel" id="actions"></div>
-  <div class="panel result hidden" id="result"></div>
-  <div class="panel"><div class="log" id="log"></div></div>
+  <div class="sub"><span id="conn"></span><span id="youare"></span></div>
+
+  <div class="panel hidden" id="lobby">
+    <p style="margin:0 0 10px;font-size:14px">ルームを作り、表示されるURLを対戦相手に送ってください。</p>
+    <button class="primary" id="bCreate">ルームを作る</button>
+    <div class="label">ルームコードで参加</div>
+    <div class="row">
+      <input id="codeIn" maxlength="5" placeholder="例：K7QXM" autocapitalize="characters" autocomplete="off">
+      <button id="bJoin">参加</button>
+    </div>
+  </div>
+
+  <div class="panel hidden" id="waiting"></div>
+
+  <div class="hidden" id="game">
+    <div class="players" id="players"></div>
+    <div class="board" id="board"></div>
+    <div class="panel" id="actions"></div>
+    <div class="panel result hidden" id="result"></div>
+    <div class="panel"><div class="log" id="log"></div></div>
+  </div>
+
   <div class="panel">
     <details>
       <summary>ルール</summary>
       <ul>
         <li>3×3の盤。各自の駒は5枚で、うち2枚は偽物（表が白紙）。赤は〇、青は×。</li>
         <li>駒は裏向きで置く。本物か偽物かは置いた本人しか知らない。</li>
-        <li>手番では「置く」「めくる」「勝利宣言」のどれか1つを行う。</li>
+        <li>手番では「置く」「めくる」「勝利宣言」のどれか1つを行う。ただし、置いた駒で自分の列が揃ったときは、続けてそのまま勝利宣言してもよい。</li>
         <li><b>めくる</b>：相手の伏せ駒を1枚めくる（1試合2回まで・手番を消費）。偽物なら除去、本物なら表向きのまま残る。</li>
         <li><b>勝利宣言</b>：自分の駒が一列並んでいるときに宣言できる（偽物入りの列でもよい）。相手は「認める」か「ダウト」を選ぶ。</li>
         <li>認める → 宣言者の勝ち（2点）。ダウト → その列をめくり、全部本物なら宣言者の勝ち（3点）、偽物が混ざっていればダウトした側の勝ち（2点）。</li>
@@ -92,18 +118,12 @@ details li{margin:3px 0}
     </details>
   </div>
 </div>
-
-<div class="overlay hidden" id="overlay">
-  <div class="box">
-    <div id="ovTitle" style="font-size:14px;color:var(--muted)"></div>
-    <div class="who" id="ovWho"></div>
-    <div class="last" id="ovLast"></div>
-    <button class="primary" id="ovBtn">見る</button>
-    <div style="font-size:12px;color:var(--muted);margin-top:10px">相手に画面を見られないようにしてからタップ</div>
-  </div>
-</div>
+<div class="toast hidden" id="toast"></div>
 
 <script>
+// ▼ sam deploy の出力 WebSocketURL をここに貼り付ける
+const WS_URL = "wss://REPLACE_ME.execute-api.ap-northeast-1.amazonaws.com/prod";
+
 const NAMES=["左上","上","右上","左","中央","右","左下","下","右下"];
 const LINES=[
   {c:[0,1,2],n:"上段"},{c:[3,4,5],n:"中段"},{c:[6,7,8],n:"下段"},
@@ -113,255 +133,235 @@ const LINES=[
 const P=[{name:"赤",mark:"〇",cls:"p0"},{name:"青",mark:"×",cls:"p1"}];
 const $=id=>document.getElementById(id);
 
-let S, g;
+let ws=null, retry=0, conn="down";
+let room=null, token=null, seat=null, V=null, mode=null;
 
-function newSet(){
-  S={game:1,scores:[0,0],first:0};
-  newGame();
-}
+function lsGet(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
+function lsSet(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
 
-function newGame(){
-  g={
-    board:Array(9).fill(null),
-    hand:[{real:3,fake:2},{real:3,fake:2}],
-    flips:[2,2], removed:[0,0],
-    turn:S.first, first:S.first, passes:0,
-    mode:null, log:[], over:false, hidden:true, hl:[], result:null, pending:null
+room=(new URLSearchParams(location.search).get("room")||"").toUpperCase()||null;
+if(room) token=lsGet("fmb:"+room);
+
+/* ---------- 通信 ---------- */
+function connect(){
+  if(WS_URL.includes("REPLACE_ME")){ conn="config"; render(); return; }
+  conn="connecting"; render();
+  try{ ws=new WebSocket(WS_URL); }catch(e){ scheduleReconnect(); return; }
+  ws.onopen=()=>{
+    conn="ok"; retry=0;
+    if(room) send({op:"join",room,token});
+    render();
   };
-  addLog(`第${S.game}戦開始。先手は${P[g.turn].name}。`);
-  showHandoff(`第${S.game}戦　先手は${P[g.turn].name}（${P[g.turn].mark}）`, "ゲーム開始");
+  ws.onmessage=e=>{ try{ handle(JSON.parse(e.data)); }catch(err){ console.error(err); } };
+  ws.onclose=()=>{ conn="down"; render(); scheduleReconnect(); };
+  ws.onerror=()=>{};
+}
+let reconnectTimer=null;
+function scheduleReconnect(){
+  if(reconnectTimer) return;
+  const wait=Math.min(1000*2**retry,10000); retry++;
+  reconnectTimer=setTimeout(()=>{ reconnectTimer=null; connect(); },wait);
+}
+document.addEventListener("visibilitychange",()=>{
+  if(document.visibilityState==="visible" && (!ws||ws.readyState>1)){ clearTimeout(reconnectTimer); reconnectTimer=null; retry=0; connect(); }
+});
+setInterval(()=>{ if(ws&&ws.readyState===1) ws.send(JSON.stringify({op:"ping"})); },5*60*1000);
+
+function send(o){
+  if(!ws||ws.readyState!==1){ toast("接続中です。少し待ってからもう一度操作してください"); return; }
+  ws.send(JSON.stringify({...o,room,token}));
 }
 
-function addLog(t){ g.log.unshift(t); }
-
-/* ---------- 判定ヘルパ ---------- */
-const handCount=p=>g.hand[p].real+g.hand[p].fake;
-const hasEmpty=()=>g.board.some(c=>!c);
-const canPlace=p=>handCount(p)>0&&hasEmpty();
-const flipTargets=p=>g.board.map((c,i)=>c&&c.owner!==p&&!c.up?i:-1).filter(i=>i>=0);
-const declLines=p=>LINES.filter(L=>L.c.every(i=>g.board[i]&&g.board[i].owner===p));
-const realLines=p=>LINES.filter(L=>L.c.every(i=>g.board[i]&&g.board[i].owner===p&&g.board[i].real));
-
-/* ---------- 行動 ---------- */
-function place(i,real){
-  const p=g.turn;
-  g.board[i]={owner:p,real,up:false};
-  g.hand[p][real?"real":"fake"]--;
-  g.passes=0;
-  const t=`${P[p].name}が${NAMES[i]}に駒を置いた。`;
-  addLog(t); g.hl=[i];
-  endTurn(t);
-}
-
-function flip(i){
-  const p=g.turn, c=g.board[i];
-  g.flips[p]--; g.passes=0;
-  let t;
-  if(!c.real){
-    g.board[i]=null; g.removed[c.owner]++;
-    t=`${P[p].name}が${NAMES[i]}をめくった → 偽物！除去された。`;
-  }else{
-    c.up=true;
-    t=`${P[p].name}が${NAMES[i]}をめくった → 本物だった。`;
+function handle(msg){
+  if(msg.type==="joined"){
+    room=msg.room; token=msg.token; seat=msg.seat;
+    lsSet("fmb:"+room,token);
+    history.replaceState(null,"","?room="+room);
+  }else if(msg.type==="state"){
+    V=msg.view; seat=V.seat; mode=null;
+  }else if(msg.type==="error"){
+    toast(msg.message);
+    if(msg.code==="NO_ROOM"||msg.code==="FULL"||msg.code==="NOT_MEMBER"){
+      room=null; token=null; V=null; seat=null;
+      history.replaceState(null,"",location.pathname);
+    }
   }
-  addLog(t); g.hl=[i];
-  endTurn(t);
-}
-
-function declare(L){
-  const p=g.turn;
-  g.pending={L,by:p}; g.passes=0; g.hl=L.c;
-  addLog(`${P[p].name}が${L.n}で勝利宣言！`);
-  g.turn=1-p; g.mode=null;
-  showHandoff(`${P[p].name}が${L.n}で勝利宣言！\n${P[g.turn].name}は「認める」か「ダウト」を選んでください。`,"勝利宣言");
-}
-
-function judge(accept){
-  const {L,by}=g.pending, o=1-by;
-  g.pending=null;
-  if(accept){
-    addLog(`${P[o].name}は宣言を認めた。`);
-    finishGame(by,2,`${P[o].name}が${P[by].name}の宣言（${L.n}）を認めた`,L.c);
-    return;
-  }
-  addLog(`${P[o].name}がダウト！`);
-  L.c.forEach(i=>g.board[i].up=true);
-  if(L.c.every(i=>g.board[i].real)){
-    finishGame(by,3,`ダウト失敗：${L.n}はすべて本物だった`,L.c);
-  }else{
-    finishGame(o,2,`ダウト成功：${L.n}に偽物が混ざっていた（ブラフ）`,L.c);
-  }
-}
-
-function pass(){
-  const p=g.turn;
-  g.passes++;
-  const t=`${P[p].name}はパスした。`;
-  addLog(t); g.hl=[];
-  if(g.passes>=2){ finalReveal(); return; }
-  endTurn(t);
-}
-
-function finalReveal(){
-  addLog("両者パス。全めくり判定。");
-  g.board.forEach(c=>{if(c)c.up=true;});
-  const a=realLines(0), b=realLines(1);
-  const cells=[...a,...b].flatMap(L=>L.c);
-  if(a.length&&!b.length) finishGame(0,1,"全めくり判定：赤だけが本物の一列を持っていた",cells);
-  else if(b.length&&!a.length) finishGame(1,1,"全めくり判定：青だけが本物の一列を持っていた",cells);
-  else finishGame(null,0,a.length?"全めくり判定：両者とも本物の一列あり → 引き分け":"全めくり判定：どちらも本物の一列なし → 引き分け",cells);
-}
-
-function endTurn(t){
-  g.turn=1-g.turn; g.mode=null;
-  showHandoff(t, "直前の行動");
-}
-
-function finishGame(w,pts,reason,cells){
-  g.over=true; g.hidden=false; g.mode=null; g.hl=cells||[];
-  if(w!==null) S.scores[w]+=pts;
-  g.result={w,pts,reason};
-  addLog(reason+(w!==null?` → ${P[w].name}に${pts}点`:""));
   render();
 }
 
-function nextGame(){
-  S.game++; S.first=1-S.first;
-  newGame();
+let toastTimer=null;
+function toast(t){
+  const el=$("toast"); el.textContent=t; el.classList.remove("hidden");
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>el.classList.add("hidden"),3500);
 }
 
-/* ---------- 交代画面 ---------- */
-function showHandoff(lastText,title){
-  g.hidden=true;
-  $("ovTitle").textContent=title;
-  $("ovWho").textContent=`${P[g.turn].name}（${P[g.turn].mark}）の番`;
-  $("ovWho").className="who "+P[g.turn].cls;
-  $("ovLast").textContent=lastText;
-  $("ovBtn").textContent=`${P[g.turn].name}のプレイヤーだけが見る`;
-  $("overlay").classList.remove("hidden");
-  render();
-}
-$("ovBtn").onclick=()=>{
-  g.hidden=false;
-  $("overlay").classList.add("hidden");
-  render();
+/* ---------- ロビー ---------- */
+$("bCreate").onclick=()=>{ room=null; token=null; send({op:"create"}); };
+$("bJoin").onclick=()=>{
+  const code=$("codeIn").value.trim().toUpperCase();
+  if(!code){ toast("ルームコードを入力してください"); return; }
+  room=code; token=lsGet("fmb:"+room);
+  history.replaceState(null,"","?room="+room);
+  send({op:"join"}); render();
 };
+const shareUrl=()=>location.origin+location.pathname+"?room="+room;
+async function copyUrl(){
+  try{ await navigator.clipboard.writeText(shareUrl()); toast("URLをコピーしました"); }
+  catch(e){ toast("コピーできませんでした。URLを長押しでコピーしてください"); }
+}
 
 /* ---------- 描画 ---------- */
-function setMode(m){ g.mode=(g.mode===m)?null:m; render(); }
+function render(){
+  const connText={ok:"接続中",connecting:"接続しています…",down:"切断されました。再接続しています…",config:"WS_URL が未設定です"}[conn];
+  $("conn").innerHTML=`<span class="dot ${conn==="ok"?"ok":conn==="connecting"?"":"down"}"></span>${connText}`;
+  $("youare").innerHTML=seat!==null&&room?`<span class="youare ${P[seat].cls}">あなたは${P[seat].name}（${P[seat].mark}）</span>`:"";
 
-function onCell(i){
-  if(g.hidden||g.over) return;
-  if((g.mode==="real"||g.mode==="fake")&&!g.board[i]) place(i,g.mode==="real");
-  else if(g.mode==="flip"&&flipTargets(g.turn).includes(i)) flip(i);
+  const inGame=!!(room&&V&&V.g);
+  $("lobby").classList.toggle("hidden",!!room);
+  $("waiting").classList.toggle("hidden",!room||inGame);
+  $("game").classList.toggle("hidden",!inGame);
+  $("score").innerHTML=inGame?`第${V.S.game}戦　<span class="s0">赤 <b>${V.S.scores[0]}</b></span> − <span class="s1"><b>${V.S.scores[1]}</b> 青</span>`:"";
+
+  if(room&&!inGame){
+    const W=$("waiting");
+    if(seat===0){
+      W.innerHTML=`<div class="label" style="margin-top:0">ルームコード</div>
+        <div class="code">${room}</div>
+        <div class="row"><input id="shareIn" readonly value="${shareUrl()}"><button id="bCopy">コピー</button></div>
+        <p class="waitmsg">このURLを相手に送ってください。<br>相手の参加を待っています…</p>`;
+      $("bCopy").onclick=copyUrl;
+      $("shareIn").onclick=e=>e.target.select();
+    }else{
+      W.innerHTML=`<p class="waitmsg">ルーム ${room} に接続しています…</p>`;
+    }
+  }
+
+  document.title="伏せ〇×";
+  if(!inGame) return;
+  renderGame();
 }
 
-function render(){
-  const me=g.turn, viewing=!g.hidden&&!g.over;
-
-  $("score").innerHTML=`第${S.game}戦　<span class="s0">赤 <b>${S.scores[0]}</b></span> − <span class="s1"><b>${S.scores[1]}</b> 青</span>`;
+function renderGame(){
+  const g=V.g, me=seat, op=1-me;
+  const myTurn=!g.over&&!g.pending&&g.turn===me;
+  const iJudge=!g.over&&!!g.pending&&g.pending.by!==me;
+  if(myTurn||iJudge) document.title="● あなたの番｜伏せ〇×";
 
   $("players").innerHTML=[0,1].map(p=>{
-    const own=viewing&&p===me;
-    const hand=own?`手駒 ${handCount(p)}枚（本物${g.hand[p].real}・偽物${g.hand[p].fake}）`:`手駒 ${handCount(p)}枚`;
-    return `<div class="pl ${P[p].cls} ${!g.over&&p===g.turn?"active":""}">
-      <div class="nm">${P[p].name}（${P[p].mark}）${p===g.first?'<span style="font-size:11px;color:var(--muted)">先手</span>':""}${!g.over&&p===g.turn?'<span class="turnmark">手番</span>':""}</div>
+    const h=g.hands[p];
+    const hand=p===me?`手駒 ${h.count}枚（本物${h.real}・偽物${h.fake}）`:`手駒 ${h.count}枚`;
+    const active=!g.over&&g.turn===p;
+    return `<div class="pl ${P[p].cls} ${active?"active":""}">
+      <div class="nm">${P[p].name}（${P[p].mark}）${p===me?'<span class="badge you">あなた</span>':""}${active?'<span class="badge turn">手番</span>':""}</div>
       <div>${hand}</div>
-      <div>めくり残り ${g.flips[p]}回</div>
+      <div>めくり残り ${g.flips[p]}回${p===g.first?'　<span style="color:var(--muted)">先手</span>':""}</div>
       <div>除去された偽物 ${g.removed[p]}/2</div>
     </div>`;
   }).join("");
 
-  const targets=new Set(
-    !viewing?[]:
-    (g.mode==="real"||g.mode==="fake")?g.board.map((c,i)=>c?-1:i).filter(i=>i>=0):
-    g.mode==="flip"?flipTargets(me):[]
-  );
+  const empties=g.board.map((c,i)=>c?-1:i).filter(i=>i>=0);
+  const flipT=g.board.map((c,i)=>c&&c.owner===op&&!c.up?i:-1).filter(i=>i>=0);
+  const declIdx=LINES.map((L,k)=>L.c.every(i=>g.board[i]&&g.board[i].owner===me)?k:-1).filter(k=>k>=0);
+  const targets=new Set(!myTurn||g.postPlace?[]:(mode==="real"||mode==="fake")?empties:mode==="flip"?flipT:[]);
+
   const b=$("board"); b.innerHTML="";
   g.board.forEach((c,i)=>{
     const d=document.createElement("div");
     d.className="cell"+(targets.has(i)?" target":"")+(g.hl.includes(i)?" hl":"");
     if(c){
-      const showFace=c.up||g.over;
-      if(showFace){
+      if(c.up){
         d.innerHTML=c.real
           ?`<div class="piece face ${P[c.owner].cls}">${P[c.owner].mark}</div>`
           :`<div class="piece face fake ${P[c.owner].cls}">偽</div>`;
       }else{
         d.innerHTML=`<div class="piece back ${P[c.owner].cls}"></div>`;
-        if(viewing&&c.owner===me) d.innerHTML+=`<span class="tag ${c.real?"":"f"}">${c.real?"本":"偽"}</span>`;
+        if(c.real!==undefined) d.innerHTML+=`<span class="tag ${c.real?"":"f"}">${c.real?"本":"偽"}</span>`;
       }
     }
-    d.onclick=()=>onCell(i);
+    d.onclick=()=>{
+      if(!targets.has(i)) return;
+      if(mode==="real"||mode==="fake") send({op:"place",cell:i,real:mode==="real"});
+      else if(mode==="flip") send({op:"flip",cell:i});
+    };
     b.appendChild(d);
   });
 
-  // 行動パネル
   const A=$("actions");
-  if(!viewing){ A.classList.add("hidden"); }
-  else if(g.pending){
-    A.classList.remove("hidden");
-    const {L,by}=g.pending;
+  A.classList.toggle("hidden",g.over);
+  if(iJudge){
+    const L=LINES[g.pending.line];
     A.innerHTML=`
-      <div style="font-weight:700;margin-bottom:8px">${P[by].name}が${L.n}（黄色の枠）で勝利宣言しています</div>
+      <div style="font-weight:700;margin-bottom:8px">相手が${L.n}（黄色の枠）で勝利宣言しました</div>
       <div class="btns">
-        <button id="bAccept">認める（${P[by].name}に2点）</button>
+        <button id="bAccept">認める（相手に2点）</button>
         <button id="bDoubt">ダウト！</button>
       </div>
-      <div class="hint">ダウト：偽物が混ざっていればあなたの勝ち（2点）。全部本物なら${P[by].name}の勝ち（3点）。</div>`;
-    $("bAccept").onclick=()=>judge(true);
-    $("bDoubt").onclick=()=>judge(false);
-  }
-  else{
-    A.classList.remove("hidden");
-    const h=g.hand[me], ft=flipTargets(me), dl=declLines(me), cp=canPlace(me);
+      <div class="hint">ダウト：偽物が混ざっていればあなたの勝ち（2点）。全部本物なら相手の勝ち（3点）。</div>`;
+    $("bAccept").onclick=()=>send({op:"judge",accept:true});
+    $("bDoubt").onclick=()=>send({op:"judge",accept:false});
+  }else if(myTurn&&g.postPlace){
+    A.innerHTML=`
+      <div style="font-weight:700;margin-bottom:4px">列が揃いました。このまま勝利宣言しますか？</div>
+      <div class="lines">${declIdx.map(k=>`<button data-k="${k}">${LINES[k].n}で宣言</button>`).join("")}</div>
+      <div style="margin-top:8px"><button id="bSkip" style="width:100%">宣言せずに手番を終える</button></div>
+      <div class="hint">偽物入りの列でも宣言できます。相手は「認める」か「ダウト」を選びます。</div>`;
+    A.querySelectorAll(".lines button").forEach(btn=>btn.onclick=()=>send({op:"declare",line:+btn.dataset.k}));
+    $("bSkip").onclick=()=>send({op:"skip"});
+  }else if(myTurn){
+    const h=g.hands[me], canPlace=h.count>0&&empties.length>0;
     const hints={
       real:"本物を置くマスを選んでください。",
       fake:"偽物を置くマスを選んでください。",
       flip:"めくる相手の伏せ駒を選んでください。",
-      declare:"宣言する列を選んでください。偽物が1枚でも混ざっていれば負けです。"
+      declare:"宣言する列を選んでください。偽物入りの列でも宣言できます。"
     };
     A.innerHTML=`
       <div class="btns">
-        <button id="bReal" class="${g.mode==="real"?"on":""}" ${h.real&&hasEmpty()?"":"disabled"}>本物を置く（${h.real}）</button>
-        <button id="bFake" class="${g.mode==="fake"?"on":""}" ${h.fake&&hasEmpty()?"":"disabled"}>偽物を置く（${h.fake}）</button>
-        <button id="bFlip" class="${g.mode==="flip"?"on":""}" ${g.flips[me]&&ft.length?"":"disabled"}>めくる（残${g.flips[me]}）</button>
-        <button id="bDecl" class="${g.mode==="declare"?"on":""}" ${dl.length?"":"disabled"}>勝利宣言</button>
+        <button id="bReal" class="${mode==="real"?"on":""}" ${h.real&&empties.length?"":"disabled"}>本物を置く（${h.real}）</button>
+        <button id="bFake" class="${mode==="fake"?"on":""}" ${h.fake&&empties.length?"":"disabled"}>偽物を置く（${h.fake}）</button>
+        <button id="bFlip" class="${mode==="flip"?"on":""}" ${g.flips[me]&&flipT.length?"":"disabled"}>めくる（残${g.flips[me]}）</button>
+        <button id="bDecl" class="${mode==="declare"?"on":""}" ${declIdx.length?"":"disabled"}>勝利宣言</button>
       </div>
-      ${g.mode==="declare"?`<div class="lines">${dl.map((L,k)=>`<button data-k="${k}">${L.n}</button>`).join("")}</div>`:""}
-      <div style="margin-top:8px"><button id="bPass" style="width:100%" ${cp?"disabled":""}>パス${cp?"（置ける間はできません）":""}</button></div>
-      <div class="hint">${g.mode?hints[g.mode]:(g.passes?"相手はパスしました。あなたもパスすると全めくり判定になります。":"行動を選んでください。")}</div>`;
+      ${mode==="declare"?`<div class="lines">${declIdx.map(k=>`<button data-k="${k}">${LINES[k].n}</button>`).join("")}</div>`:""}
+      <div style="margin-top:8px"><button id="bPass" style="width:100%" ${canPlace?"disabled":""}>パス${canPlace?"（置ける間はできません）":""}</button></div>
+      <div class="hint">${mode?hints[mode]:(g.passes?"相手はパスしました。あなたもパスすると全めくり判定になります。":"あなたの番です。行動を選んでください。")}</div>`;
+    const setMode=m=>{ mode=mode===m?null:m; renderGame(); };
     $("bReal").onclick=()=>setMode("real");
     $("bFake").onclick=()=>setMode("fake");
     $("bFlip").onclick=()=>setMode("flip");
     $("bDecl").onclick=()=>setMode("declare");
-    $("bPass").onclick=pass;
-    A.querySelectorAll(".lines button").forEach(btn=>btn.onclick=()=>declare(dl[+btn.dataset.k]));
+    $("bPass").onclick=()=>send({op:"pass"});
+    A.querySelectorAll(".lines button").forEach(btn=>btn.onclick=()=>send({op:"declare",line:+btn.dataset.k}));
+  }else if(!g.over){
+    const t=g.pending?"相手が「認める」か「ダウト」かを選んでいます…"
+      :g.postPlace?"相手が勝利宣言するか考えています…"
+      :"相手の手番です…";
+    A.innerHTML=`<p class="waitmsg">${t}</p>`;
   }
 
-  // 結果パネル
   const R=$("result");
   if(g.over){
     R.classList.remove("hidden");
     const r=g.result;
-    const head=r.w===null?"引き分け":`${P[r.w].name}の勝ち（+${r.pts}点）`;
-    const setOver=S.game>=2&&S.scores[0]!==S.scores[1];
+    const head=r.w===null?"引き分け":r.w===me?`あなたの勝ち（+${r.pts}点）`:`相手の勝ち（相手に+${r.pts}点）`;
     let foot;
-    if(setOver){
-      const sw=S.scores[0]>S.scores[1]?0:1;
-      foot=`<p><b>セット終了：${P[sw].name}の勝ち（${S.scores[0]} − ${S.scores[1]}）</b></p><button class="primary" id="bNext">新しいセットを始める</button>`;
+    if(V.setOver){
+      const sw=V.S.scores[0]>V.S.scores[1]?0:1;
+      foot=`<p><b>セット終了：${sw===me?"あなた":"相手"}（${P[sw].name}）の勝ち（${V.S.scores[0]} − ${V.S.scores[1]}）</b></p><button class="primary" id="bNext">新しいセットを始める</button>`;
     }else{
-      const extra=S.game>=2?"同点のため延長戦。":"";
-      foot=`<p>${extra}次は第${S.game+1}戦、先手は${P[1-S.first].name}です。</p><button class="primary" id="bNext">次の試合へ</button>`;
+      const extra=V.S.game>=2?"同点のため延長戦。":"";
+      const nf=1-V.S.first;
+      foot=`<p>${extra}次は第${V.S.game+1}戦、先手は${nf===me?"あなた":"相手"}（${P[nf].name}）です。</p><button class="primary" id="bNext">次の試合へ</button>`;
     }
-    R.innerHTML=`<h2>${head}</h2><p>${r.reason}</p>${foot}`;
-    $("bNext").onclick=setOver?newSet:nextGame;
+    R.innerHTML=`<h2>${head}</h2><p>${r.reason}</p>${foot}<div class="hint">どちらかが押すと、両方の画面で次へ進みます。</div>`;
+    $("bNext").onclick=()=>send({op:"next"});
   }else R.classList.add("hidden");
 
-  $("log").innerHTML=g.log.slice(0,40).map(t=>`<div>${t}</div>`).join("");
+  $("log").innerHTML=g.log.map(t=>`<div>${t}</div>`).join("");
 }
 
-newSet();
+render();
+connect();
 </script>
 </body>
 </html>
