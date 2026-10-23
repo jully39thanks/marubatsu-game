@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="ja">
 <head>
 <meta charset="utf-8">
@@ -33,18 +33,23 @@ h1{font-size:22px;margin:0;letter-spacing:.08em}
 .pl .badge{font-size:11px;border-radius:6px;padding:0 6px;margin-left:4px;vertical-align:2px;font-weight:700}
 .pl .badge.turn{background:var(--ink);color:#fff}
 .pl .badge.you{border:1px solid var(--line);color:var(--muted)}
-.board{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;width:100%;margin-bottom:12px}
+.board{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;width:100%;margin-bottom:12px}
 .cell{aspect-ratio:1/1;min-width:0;overflow:hidden;background:var(--panel);border:2px solid var(--line);border-radius:12px;position:relative;display:flex;align-items:center;justify-content:center;user-select:none}
 .cell.target{border-color:var(--ink);border-style:dashed;cursor:pointer}
 .cell.target:hover{background:#f7f2e8}
 .cell.hl{box-shadow:0 0 0 3px var(--hl)}
-.piece{width:72%;height:auto;aspect-ratio:1/1;flex:none;line-height:1;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:clamp(28px,11vw,52px);font-weight:700}
+.piece{width:74%;height:auto;aspect-ratio:1/1;flex:none;line-height:1;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:clamp(22px,8vw,40px);font-weight:700}
 .piece.back.p0{background:repeating-linear-gradient(45deg,var(--p0) 0 7px,var(--p0d) 7px 14px)}
 .piece.back.p1{background:repeating-linear-gradient(45deg,var(--p1) 0 7px,var(--p1d) 7px 14px)}
 .piece.face.p0{background:var(--p0soft);border:3px solid var(--p0);color:var(--p0)}
 .piece.face.p1{background:var(--p1soft);border:3px solid var(--p1);color:var(--p1)}
-.piece.fake{background:#fff!important;border-style:dashed!important;color:var(--muted)!important;font-size:clamp(16px,5vw,22px)}
-.tag{position:absolute;top:5px;right:6px;font-size:11px;font-weight:700;padding:0 6px;border-radius:6px;background:#fff;border:1px solid var(--line)}
+.piece.fake{background:#fff!important;border-style:dashed!important;color:var(--muted)!important;font-size:clamp(13px,4vw,18px)}
+.cell.blocked{background:repeating-linear-gradient(45deg,#d8d0c4 0 6px,#cbc2b5 6px 12px);border-color:#bdb3a5}
+.cell.blocked .bl{font-size:12px;font-weight:700;color:#6d655c;background:rgba(255,255,255,.7);padding:1px 6px;border-radius:6px}
+.cell .coord{position:absolute;left:5px;top:3px;font-size:10px;color:#b4aa9c;pointer-events:none}
+.cell.outer{background:#fbf6ea}
+.conv{position:absolute;bottom:4px;right:5px;font-size:10px;font-weight:700;background:#fff;border:1px solid var(--line);border-radius:6px;padding:0 4px;color:var(--muted)}
+.tag{position:absolute;top:4px;right:5px;font-size:10px;font-weight:700;padding:0 6px;border-radius:6px;background:#fff;border:1px solid var(--line)}
 .tag.f{color:var(--muted)}
 .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:12px}
 .btns{display:grid;grid-template-columns:1fr 1fr;gap:8px}
@@ -105,14 +110,14 @@ details li{margin:3px 0}
     <details>
       <summary>ルール</summary>
       <ul>
-        <li>3×3の盤。各自の駒は5枚で、うち2枚は偽物（表が白紙）。赤は〇、青は×。</li>
+        <li>4×4の盤。縦・横・斜めに自分の駒を3つ並べると「列」。<b>外周だけで作った列（1行・4行・A列・D列）は+1点</b>（盤の色が薄いマス）。</li>
+        <li>手駒は各自10枚：本物7枚・偽物3枚（表が白紙）。全部は置ききれない。赤は〇、青は×。</li>
         <li>駒は裏向きで置く。本物か偽物かは置いた本人しか知らない。</li>
-        <li>手番では「置く」「めくる」「勝利宣言」のどれか1つを行う。ただし、置いた駒で自分の列が揃ったときは、続けてそのまま勝利宣言してもよい。</li>
-        <li><b>めくる</b>：相手の伏せ駒を1枚めくる（1試合2回まで・手番を消費）。偽物なら除去、本物なら表向きのまま残る。</li>
-        <li><b>勝利宣言</b>：自分の駒が一列並んでいるときに宣言できる（偽物入りの列でもよい）。相手は「認める」か「ダウト」を選ぶ。</li>
-        <li>認める → 宣言者の勝ち（2点）。ダウト → その列をめくり、全部本物なら宣言者の勝ち（3点）、偽物が混ざっていればダウトした側の勝ち（2点）。</li>
-        <li>置けない（手駒切れ・空きマスなし）ときはパスできる。両者が続けてパスしたら全めくり判定。</li>
-        <li><b>全めくり判定</b>：本物だけの一列を持つのが片方だけならその人の勝ち（1点）。両者または誰も持たなければ引き分け。</li>
+        <li>手番では「置く」「めくる」「勝利宣言」のどれか1つを行う。置いた駒で列が揃ったときは、続けてそのまま宣言してもよい。</li>
+        <li><b>めくる</b>（先手2回・後手3回・手番を消費）：相手の伏せ駒を1枚めくる。<b>本物なら除去してそのマスを封鎖</b>（誰も置けず列にも使えない）。<b>偽物なら表向きの本物に変わる</b>。</li>
+        <li><b>勝利宣言</b>：自分の列があれば宣言できる（偽物入りでもよい）。相手は「認める」か「ダウト」を選ぶ。</li>
+        <li>認める → 宣言者に2点。ダウト → 列をめくり、全部本物なら宣言者に3点、偽物が混ざっていればダウト側に2点。外周の列ならどの場合も+1点。</li>
+        <li>置けない（手駒切れ・空きマスなし）ときはパスできる。両者が続けてパスしたら全めくり判定：本物だけの列を片方だけが持っていればその人に1点。</li>
         <li>先後を交代して2戦で1セット。合計点が同点ならもう1戦。</li>
       </ul>
     </details>
@@ -124,12 +129,18 @@ details li{margin:3px 0}
 // ▼ sam deploy の出力 WebSocketURL をここに貼り付ける
 const WS_URL = "wss://cqjz1fcnpi.execute-api.ap-northeast-1.amazonaws.com/prod";
 
-const NAMES=["左上","上","右上","左","中央","右","左下","下","右下"];
-const LINES=[
-  {c:[0,1,2],n:"上段"},{c:[3,4,5],n:"中段"},{c:[6,7,8],n:"下段"},
-  {c:[0,3,6],n:"左列"},{c:[1,4,7],n:"中列"},{c:[2,5,8],n:"右列"},
-  {c:[0,4,8],n:"斜め（左上→右下）"},{c:[2,4,6],n:"斜め（右上→左下）"}
-];
+const SIZE=4, COLS="ABCD";
+const cellName=i=>COLS[i%SIZE]+(Math.floor(i/SIZE)+1);
+const isOuterCell=i=>{const r=Math.floor(i/SIZE),c=i%SIZE;return r===0||r===SIZE-1||c===0||c===SIZE-1;};
+// サーバー(game.mjs)と同じ順番で列を作る
+const LINES=(()=>{const L=[];
+  for(let r=0;r<SIZE;r++)for(let c=0;c<=SIZE-3;c++)L.push({c:[0,1,2].map(k=>r*SIZE+c+k),outer:r===0||r===SIZE-1,n:`${r+1}行 ${COLS[c]}〜${COLS[c+2]}`});
+  for(let c=0;c<SIZE;c++)for(let r=0;r<=SIZE-3;r++)L.push({c:[0,1,2].map(k=>(r+k)*SIZE+c),outer:c===0||c===SIZE-1,n:`${COLS[c]}列 ${r+1}〜${r+3}`});
+  for(let r=0;r<=SIZE-3;r++)for(let c=0;c<=SIZE-3;c++){const x=[0,1,2].map(k=>(r+k)*SIZE+c+k);L.push({c:x,outer:false,n:`斜め ${cellName(x[0])}〜${cellName(x[2])}`});}
+  for(let r=0;r<=SIZE-3;r++)for(let c=2;c<SIZE;c++){const x=[0,1,2].map(k=>(r+k)*SIZE+c-k);L.push({c:x,outer:false,n:`斜め ${cellName(x[0])}〜${cellName(x[2])}`});}
+  return L;})();
+const lineLabel=L=>L.n+(L.outer?" ★+1":"");
+const isPiece=c=>!!c&&!c.blocked;
 const P=[{name:"赤",mark:"〇",cls:"p0"},{name:"青",mark:"×",cls:"p1"}];
 const $=id=>document.getElementById(id);
 
@@ -144,7 +155,7 @@ if(room) token=lsGet("fmb:"+room);
 
 /* ---------- 通信 ---------- */
 function connect(){
-  if(WS_URL.includes("REPLACE_ME")){ conn="config"; render(); return; }
+  if(WS_URL.includes("REPLACE_"+"ME")){ conn="config"; render(); return; }
   conn="connecting"; render();
   try{ ws=new WebSocket(WS_URL); }catch(e){ scheduleReconnect(); return; }
   ws.onopen=()=>{
@@ -255,29 +266,34 @@ function renderGame(){
       <div class="nm">${P[p].name}（${P[p].mark}）${p===me?'<span class="badge you">あなた</span>':""}${active?'<span class="badge turn">手番</span>':""}</div>
       <div>${hand}</div>
       <div>めくり残り ${g.flips[p]}回${p===g.first?'　<span style="color:var(--muted)">先手</span>':""}</div>
-      <div>除去された偽物 ${g.removed[p]}/2</div>
+      <div>封鎖された本物 ${g.lost[p]}・本物化した偽物 ${g.converted[p]}</div>
     </div>`;
   }).join("");
 
-  const empties=g.board.map((c,i)=>c?-1:i).filter(i=>i>=0);
-  const flipT=g.board.map((c,i)=>c&&c.owner===op&&!c.up?i:-1).filter(i=>i>=0);
-  const declIdx=LINES.map((L,k)=>L.c.every(i=>g.board[i]&&g.board[i].owner===me)?k:-1).filter(k=>k>=0);
+  const empties=g.board.map((c,i)=>c===null?i:-1).filter(i=>i>=0);
+  const flipT=g.board.map((c,i)=>isPiece(c)&&c.owner===op&&!c.up?i:-1).filter(i=>i>=0);
+  const declIdx=LINES.map((L,k)=>L.c.every(i=>isPiece(g.board[i])&&g.board[i].owner===me)?k:-1).filter(k=>k>=0);
   const targets=new Set(!myTurn||g.postPlace?[]:(mode==="real"||mode==="fake")?empties:mode==="flip"?flipT:[]);
 
   const b=$("board"); b.innerHTML="";
   g.board.forEach((c,i)=>{
     const d=document.createElement("div");
-    d.className="cell"+(targets.has(i)?" target":"")+(g.hl.includes(i)?" hl":"");
-    if(c){
+    d.className="cell"+(isOuterCell(i)?" outer":"")+(c&&c.blocked?" blocked":"")+(targets.has(i)?" target":"")+(g.hl.includes(i)?" hl":"");
+    let h=`<span class="coord">${cellName(i)}</span>`;
+    if(c&&c.blocked){
+      h+=`<span class="bl">封鎖</span>`;
+    }else if(c){
       if(c.up){
-        d.innerHTML=c.real
+        h+=c.real
           ?`<div class="piece face ${P[c.owner].cls}">${P[c.owner].mark}</div>`
           :`<div class="piece face fake ${P[c.owner].cls}">偽</div>`;
+        if(c.converted) h+=`<span class="conv">元偽物</span>`;
       }else{
-        d.innerHTML=`<div class="piece back ${P[c.owner].cls}"></div>`;
-        if(c.real!==undefined) d.innerHTML+=`<span class="tag ${c.real?"":"f"}">${c.real?"本":"偽"}</span>`;
+        h+=`<div class="piece back ${P[c.owner].cls}"></div>`;
+        if(c.real!==undefined) h+=`<span class="tag ${c.real?"":"f"}">${c.real?"本":"偽"}</span>`;
       }
     }
+    d.innerHTML=h;
     d.onclick=()=>{
       if(!targets.has(i)) return;
       if(mode==="real"||mode==="fake") send({op:"place",cell:i,real:mode==="real"});
@@ -289,20 +305,20 @@ function renderGame(){
   const A=$("actions");
   A.classList.toggle("hidden",g.over);
   if(iJudge){
-    const L=LINES[g.pending.line];
+    const L=LINES[g.pending.line], b=L.outer?1:0;
     A.innerHTML=`
-      <div style="font-weight:700;margin-bottom:8px">相手が${L.n}（黄色の枠）で勝利宣言しました</div>
+      <div style="font-weight:700;margin-bottom:8px">相手が${L.n}（黄色の枠）で勝利宣言しました${b?"　★外周":""}</div>
       <div class="btns">
-        <button id="bAccept">認める（相手に2点）</button>
+        <button id="bAccept">認める（相手に${2+b}点）</button>
         <button id="bDoubt">ダウト！</button>
       </div>
-      <div class="hint">ダウト：偽物が混ざっていればあなたの勝ち（2点）。全部本物なら相手の勝ち（3点）。</div>`;
+      <div class="hint">ダウト：偽物が混ざっていればあなたの勝ち（${2+b}点）。全部本物なら相手の勝ち（${3+b}点）。</div>`;
     $("bAccept").onclick=()=>send({op:"judge",accept:true});
     $("bDoubt").onclick=()=>send({op:"judge",accept:false});
   }else if(myTurn&&g.postPlace){
     A.innerHTML=`
       <div style="font-weight:700;margin-bottom:4px">列が揃いました。このまま勝利宣言しますか？</div>
-      <div class="lines">${declIdx.map(k=>`<button data-k="${k}">${LINES[k].n}で宣言</button>`).join("")}</div>
+      <div class="lines">${declIdx.map(k=>`<button data-k="${k}">${lineLabel(LINES[k])}で宣言</button>`).join("")}</div>
       <div style="margin-top:8px"><button id="bSkip" style="width:100%">宣言せずに手番を終える</button></div>
       <div class="hint">偽物入りの列でも宣言できます。相手は「認める」か「ダウト」を選びます。</div>`;
     A.querySelectorAll(".lines button").forEach(btn=>btn.onclick=()=>send({op:"declare",line:+btn.dataset.k}));
@@ -312,7 +328,7 @@ function renderGame(){
     const hints={
       real:"本物を置くマスを選んでください。",
       fake:"偽物を置くマスを選んでください。",
-      flip:"めくる相手の伏せ駒を選んでください。",
+      flip:"めくる相手の伏せ駒を選んでください。本物なら除去・封鎖、偽物なら本物に変わります。",
       declare:"宣言する列を選んでください。偽物入りの列でも宣言できます。"
     };
     A.innerHTML=`
@@ -322,7 +338,7 @@ function renderGame(){
         <button id="bFlip" class="${mode==="flip"?"on":""}" ${g.flips[me]&&flipT.length?"":"disabled"}>めくる（残${g.flips[me]}）</button>
         <button id="bDecl" class="${mode==="declare"?"on":""}" ${declIdx.length?"":"disabled"}>勝利宣言</button>
       </div>
-      ${mode==="declare"?`<div class="lines">${declIdx.map(k=>`<button data-k="${k}">${LINES[k].n}</button>`).join("")}</div>`:""}
+      ${mode==="declare"?`<div class="lines">${declIdx.map(k=>`<button data-k="${k}">${lineLabel(LINES[k])}</button>`).join("")}</div>`:""}
       <div style="margin-top:8px"><button id="bPass" style="width:100%" ${canPlace?"disabled":""}>パス${canPlace?"（置ける間はできません）":""}</button></div>
       <div class="hint">${mode?hints[mode]:(g.passes?"相手はパスしました。あなたもパスすると全めくり判定になります。":"あなたの番です。行動を選んでください。")}</div>`;
     const setMode=m=>{ mode=mode===m?null:m; renderGame(); };
