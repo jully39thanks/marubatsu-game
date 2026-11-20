@@ -111,13 +111,14 @@ details li{margin:3px 0}
       <summary>ルール</summary>
       <ul>
         <li>4×4の盤。縦・横・斜めに自分の駒を3つ並べると「列」。<b>外周だけで作った列（1行・4行・A列・D列）は+1点</b>（盤の色が薄いマス）。</li>
-        <li>手駒は各自10枚：本物7枚・偽物3枚（表が白紙）。全部は置ききれない。赤は〇、青は×。</li>
-        <li>駒は裏向きで置く。本物か偽物かは置いた本人しか知らない。</li>
+        <li>手駒は各自10枚：通常駒6・<b>★勝ち駒1</b>・偽物3（表が白紙）。全部は置ききれない。赤は〇、青は×。</li>
+        <li>駒は裏向きで置く。通常・勝ち・偽物のどれかは置いた本人しか知らない。<b>勝てる列は「3つとも本物で、勝ち駒を1つ以上含む」列だけ。</b></li>
         <li>手番では「置く」「めくる」「勝利宣言」のどれか1つを行う。置いた駒で列が揃ったときは、続けてそのまま宣言してもよい。</li>
-        <li><b>めくる</b>（先手2回・後手3回・手番を消費）：相手の伏せ駒を1枚めくる。<b>本物なら除去してそのマスを封鎖</b>（誰も置けず列にも使えない）。<b>偽物なら表向きの本物に変わる</b>。</li>
-        <li><b>勝利宣言</b>：自分の列があれば宣言できる（偽物入りでもよい）。相手は「認める」か「ダウト」を選ぶ。</li>
-        <li>認める → 宣言者に2点。ダウト → 列をめくり、全部本物なら宣言者に3点、偽物が混ざっていればダウト側に2点。外周の列ならどの場合も+1点。</li>
-        <li>置けない（手駒切れ・空きマスなし）ときはパスできる。両者が続けてパスしたら全めくり判定：本物だけの列を片方だけが持っていればその人に1点。</li>
+        <li><b>めくる</b>（先手2回・後手3回・手番を消費）：相手の伏せ駒を1枚めくる。<b>偽物なら奪って自分の駒（表向きの通常駒）にし、めくった側に+1点</b>。<b>本物（勝ち駒含む）なら除去してマスを封鎖し、持ち主に+1点</b>（外すと相手が得をする）。</li>
+        <li><b>勝利宣言</b>：自分の3つ並びがあれば宣言できる（偽物入り・勝ち駒なしでもブラフで可）。相手は「認める」か「ダウト」を選ぶ。</li>
+        <li>認める → 宣言者に2点。ダウト → 列をめくり、本物だけで勝ち駒入りなら宣言者に3点、偽物が混ざる／勝ち駒がなければダウト側に3点。外周の列ならどの場合も+1点。</li>
+        <li>置けない（手駒切れ・空きマスなし）ときはパスできる。両者が続けてパスしたら全めくり判定：本物だけで勝ち駒入りの列を片方だけが持っていればその人に1点。</li>
+        <li>めくりで得た点は、試合の決着時にそのまま加算される。</li>
         <li>先後を交代して2戦で1セット。合計点が同点ならもう1戦。</li>
       </ul>
     </details>
@@ -260,20 +261,20 @@ function renderGame(){
 
   $("players").innerHTML=[0,1].map(p=>{
     const h=g.hands[p];
-    const hand=p===me?`手駒 ${h.count}枚（本物${h.real}・偽物${h.fake}）`:`手駒 ${h.count}枚`;
+    const hand=p===me?`手駒 ${h.count}枚（通常${h.real}・勝ち${h.win}・偽物${h.fake}）`:`手駒 ${h.count}枚`;
     const active=!g.over&&g.turn===p;
     return `<div class="pl ${P[p].cls} ${active?"active":""}">
       <div class="nm">${P[p].name}（${P[p].mark}）${p===me?'<span class="badge you">あなた</span>':""}${active?'<span class="badge turn">手番</span>':""}</div>
       <div>${hand}</div>
       <div>めくり残り ${g.flips[p]}回${p===g.first?'　<span style="color:var(--muted)">先手</span>':""}</div>
-      <div>封鎖された本物 ${g.lost[p]}・本物化した偽物 ${g.converted[p]}</div>
+      <div>めくり得点 +${g.pts[p]}（除去された駒 ${g.lost[p]}・奪われた偽物 ${g.converted[p]}）</div>
     </div>`;
   }).join("");
 
   const empties=g.board.map((c,i)=>c===null?i:-1).filter(i=>i>=0);
   const flipT=g.board.map((c,i)=>isPiece(c)&&c.owner===op&&!c.up?i:-1).filter(i=>i>=0);
   const declIdx=LINES.map((L,k)=>L.c.every(i=>isPiece(g.board[i])&&g.board[i].owner===me)?k:-1).filter(k=>k>=0);
-  const targets=new Set(!myTurn||g.postPlace?[]:(mode==="real"||mode==="fake")?empties:mode==="flip"?flipT:[]);
+  const targets=new Set(!myTurn||g.postPlace?[]:(mode==="real"||mode==="win"||mode==="fake")?empties:mode==="flip"?flipT:[]);
 
   const b=$("board"); b.innerHTML="";
   g.board.forEach((c,i)=>{
@@ -285,18 +286,18 @@ function renderGame(){
     }else if(c){
       if(c.up){
         h+=c.real
-          ?`<div class="piece face ${P[c.owner].cls}">${P[c.owner].mark}</div>`
+          ?`<div class="piece face ${P[c.owner].cls}">${c.win?"★":P[c.owner].mark}</div>`
           :`<div class="piece face fake ${P[c.owner].cls}">偽</div>`;
-        if(c.converted) h+=`<span class="conv">元偽物</span>`;
+        if(c.converted) h+=`<span class="conv">奪取</span>`;
       }else{
         h+=`<div class="piece back ${P[c.owner].cls}"></div>`;
-        if(c.real!==undefined) h+=`<span class="tag ${c.real?"":"f"}">${c.real?"本":"偽"}</span>`;
+        if(c.real!==undefined) h+=`<span class="tag ${c.real?"":"f"}">${c.win?"勝":c.real?"通":"偽"}</span>`;
       }
     }
     d.innerHTML=h;
     d.onclick=()=>{
       if(!targets.has(i)) return;
-      if(mode==="real"||mode==="fake") send({op:"place",cell:i,real:mode==="real"});
+      if(mode==="real"||mode==="win"||mode==="fake") send({op:"place",cell:i,kind:mode,real:mode!=="fake"});
       else if(mode==="flip") send({op:"flip",cell:i});
     };
     b.appendChild(d);
@@ -305,14 +306,14 @@ function renderGame(){
   const A=$("actions");
   A.classList.toggle("hidden",g.over);
   if(iJudge){
-    const L=LINES[g.pending.line], b=L.outer?1:0;
+    const L=LINES[g.pending.line], b=L.outer?1:0, R=V.rules;
     A.innerHTML=`
       <div style="font-weight:700;margin-bottom:8px">相手が${L.n}（黄色の枠）で勝利宣言しました${b?"　★外周":""}</div>
       <div class="btns">
-        <button id="bAccept">認める（相手に${2+b}点）</button>
+        <button id="bAccept">認める（相手に${R.acceptPts+b}点）</button>
         <button id="bDoubt">ダウト！</button>
       </div>
-      <div class="hint">ダウト：偽物が混ざっていればあなたの勝ち（${2+b}点）。全部本物なら相手の勝ち（${3+b}点）。</div>`;
+      <div class="hint">ダウト：偽物が混ざっている、または勝ち駒が無ければあなたの勝ち（${R.doubtOkPts+b}点）。全部本物で勝ち駒入りなら相手の勝ち（${R.doubtFailPts+b}点）。</div>`;
     $("bAccept").onclick=()=>send({op:"judge",accept:true});
     $("bDoubt").onclick=()=>send({op:"judge",accept:false});
   }else if(myTurn&&g.postPlace){
@@ -326,14 +327,16 @@ function renderGame(){
   }else if(myTurn){
     const h=g.hands[me], canPlace=h.count>0&&empties.length>0;
     const hints={
-      real:"本物を置くマスを選んでください。",
+      real:"通常駒を置くマスを選んでください。",
+      win:"勝ち駒を置くマスを選んでください。勝つ列には勝ち駒が必要です。",
       fake:"偽物を置くマスを選んでください。",
-      flip:"めくる相手の伏せ駒を選んでください。本物なら除去・封鎖、偽物なら本物に変わります。",
+      flip:"めくる相手の伏せ駒を選んでください。偽物なら奪って自分の駒に+1点。本物（勝ち駒含む）なら除去・封鎖して相手に+1点。",
       declare:"宣言する列を選んでください。偽物入りの列でも宣言できます。"
     };
     A.innerHTML=`
       <div class="btns">
-        <button id="bReal" class="${mode==="real"?"on":""}" ${h.real&&empties.length?"":"disabled"}>本物を置く（${h.real}）</button>
+        <button id="bReal" class="${mode==="real"?"on":""}" ${h.real&&empties.length?"":"disabled"}>通常駒を置く（${h.real}）</button>
+        <button id="bWin" class="${mode==="win"?"on":""}" ${h.win&&empties.length?"":"disabled"}>★勝ち駒を置く（${h.win}）</button>
         <button id="bFake" class="${mode==="fake"?"on":""}" ${h.fake&&empties.length?"":"disabled"}>偽物を置く（${h.fake}）</button>
         <button id="bFlip" class="${mode==="flip"?"on":""}" ${g.flips[me]&&flipT.length?"":"disabled"}>めくる（残${g.flips[me]}）</button>
         <button id="bDecl" class="${mode==="declare"?"on":""}" ${declIdx.length?"":"disabled"}>勝利宣言</button>
@@ -343,6 +346,7 @@ function renderGame(){
       <div class="hint">${mode?hints[mode]:(g.passes?"相手はパスしました。あなたもパスすると全めくり判定になります。":"あなたの番です。行動を選んでください。")}</div>`;
     const setMode=m=>{ mode=mode===m?null:m; renderGame(); };
     $("bReal").onclick=()=>setMode("real");
+    $("bWin").onclick=()=>setMode("win");
     $("bFake").onclick=()=>setMode("fake");
     $("bFlip").onclick=()=>setMode("flip");
     $("bDecl").onclick=()=>setMode("declare");
@@ -359,7 +363,8 @@ function renderGame(){
   if(g.over){
     R.classList.remove("hidden");
     const r=g.result;
-    const head=r.w===null?"引き分け":r.w===me?`あなたの勝ち（+${r.pts}点）`:`相手の勝ち（相手に+${r.pts}点）`;
+    const sd=r.side||[0,0], sdTxt=(sd[0]||sd[1])?`　めくり得点：赤+${sd[0]}／青+${sd[1]}`:"";
+    const head=(r.w===null?"引き分け":r.w===me?`あなたの勝ち（+${r.pts}点）`:`相手の勝ち（相手に+${r.pts}点）`)+sdTxt;
     let foot;
     if(V.setOver){
       const sw=V.S.scores[0]>V.S.scores[1]?0:1;
